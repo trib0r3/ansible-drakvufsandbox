@@ -1,0 +1,29 @@
+# Description
+#   Playbook designed for upgrading drakvuf sandbox
+# Prerequisities:
+# - install drakvuf-sandbox prerequisities
+# - (optional) install VM
+
+- hosts: drakvuf_sandboxes
+  become: yes
+  become_method: sudo
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Download latest download urls
+      uri:
+        url: https://api.github.com/repos/CERT-Polska/drakvuf-sandbox/releases/latest
+        return_content: yes
+      register: ds_json
+
+    - name: Download drak* modules & Install them
+      apt:
+        deb: "{{ item.browser_download_url }}"
+      with_items: "{{ ds_json.json.assets }}"
+      when: 
+        - item.browser_download_url | regex_search(ubuntu_release)
+
+    - name: Reboot the machine
+      reboot:
+        msg: "Reboot by ansible"
